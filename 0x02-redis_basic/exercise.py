@@ -8,21 +8,31 @@ import functools
 from typing import Union, Callable
 
 
-def replay(method: Callable):
-    """ This is a return the output decode """
-    input_key = "{}:inputs".format(method.__qualname__)
-    output_key = "{}:outputs".format(method.__qualname__)
+def replay(fn: Callable):
+    """Display the history of calls of a particular function"""
+    r = redis.Redis()
+    f_name = fn.__qualname__
+    n_calls = r.get(f_name)
+    try:
+        n_calls = n_calls.decode('utf-8')
+    except Exception:
+        n_calls = 0
+    print(f'{f_name} was called {n_calls} times:')
 
-    inputs = redis_conn.lrange(input_key, 0, -1)
-    outputs = redis_conn.lrange(output_key, 0, -1)
+    ins = r.lrange(f_name + ":inputs", 0, -1)
+    outs = r.lrange(f_name + ":outputs", 0, -1)
 
-    print(f"Cache.{method.__name__} was called {len(inputs)} times:")
-    for input_args, output in zip(inputs, outputs):
-        print(f"Cache.{method.__name__}{input_args.decode()} -> "
-              f"{output.decode()}")
+    for i, o in zip(ins, outs):
+        try:
+            i = i.decode('utf-8')
+        except Exception:
+            i = ""
+        try:
+            o = o.decode('utf-8')
+        except Exception:
+            o = ""
 
-
-redis_conn = redis.Redis()
+        print(f'{f_name}(*{i}) -> {o}')
 
 
 def call_history(method: Callable) -> Callable:
