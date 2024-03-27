@@ -8,9 +8,33 @@ import functools
 from typing import Union, Callable
 
 
-def count_calls(method: Callable) -> Callable:
+def call_history(method: Callable) -> Callable:
+    """ This is a method that reurn tha callable wrapper """
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
+        """ This method return the _redis output key """
+        input_key = "{}:inputs".format(method.__qualname__)
+        output_key = "{}:outputs".format(method.__qualname__)
+
+        # Store input parameters
+        self._redis.rpush(input_key, str(args))
+
+        # Execute the wrapped function
+        output = method(self, *args, **kwargs)
+
+        # Store the output
+        self._redis.rpush(output_key, output)
+
+        return output
+
+    return wrapper
+
+
+def count_calls(method: Callable) -> Callable:
+    """ This is a method that handle a callable wrapper """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """ This function return the method of the key """
         key = method.__qualname__
         self._redis.incr(key)
         return method(self, *args, **kwargs)
@@ -25,6 +49,7 @@ class Cache:
         self._redis.flushdb()
 
     @count_calls
+    @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """ This is the method that return the stored key """
         key = str(uuid.uuid4())
