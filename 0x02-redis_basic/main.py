@@ -8,6 +8,11 @@ Cache = __import__('exercise').Cache
 
 cache = Cache()
 
+cache.store("foo")
+cache.store("bar")
+cache.store(42)
+
+
 cache.store(b"first")
 print(cache.get(cache.store.__qualname__))
 

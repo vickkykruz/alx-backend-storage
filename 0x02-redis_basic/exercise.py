@@ -8,6 +8,22 @@ import functools
 from typing import Union, Callable
 
 
+def replay(method: Callable):
+    input_key = "{}:inputs".format(method.__qualname__)
+    output_key = "{}:outputs".format(method.__qualname__)
+
+    inputs = redis_conn.lrange(input_key, 0, -1)
+    outputs = redis_conn.lrange(output_key, 0, -1)
+
+    print(f"Cache.{method.__name__} was called {len(inputs)} times:")
+    for input_args, output in zip(inputs, outputs):
+        print(f"Cache.{method.__name__}{input_args.decode()} -> "
+              f"{output.decode()}")
+
+
+redis_conn = redis.Redis()
+
+
 def call_history(method: Callable) -> Callable:
     """ This is a method that reurn tha callable wrapper """
     @functools.wraps(method)
