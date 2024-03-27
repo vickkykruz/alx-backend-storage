@@ -9,6 +9,7 @@ from typing import Union, Callable
 
 
 def replay(method: Callable):
+    """ This is a return the output decode """
     input_key = "{}:inputs".format(method.__qualname__)
     output_key = "{}:outputs".format(method.__qualname__)
 
